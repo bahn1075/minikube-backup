@@ -1,0 +1,6 @@
+# 백업 압축 파일 제외
+minikube-full-backup*.tar.gz
+
+# 백업 디렉토리 제외
+minikube-full-backup*/
+
