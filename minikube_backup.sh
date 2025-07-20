@@ -1,15 +1,30 @@
 #!/bin/bash
 
-# 백업 중단 복구 스크립트
+# 백업 생성 및 복구 스크립트
 
 INCOMPLETE_BACKUP_DIR=${1:-""}
 PROFILE_NAME=${2:-minikube}
 
 if [ -z "$INCOMPLETE_BACKUP_DIR" ]; then
-    echo "사용법: $0 <중단된_백업_디렉토리> [프로필명]"
-    echo ""
-    echo "예시: $0 minikube-full-backup-v3-20250720-224453 minikube"
-    exit 1
+    echo "백업을 저장할 경로를 입력하세요:"
+    read -p "경로: " base_path
+    
+    if [ -z "$base_path" ]; then
+        echo "경로가 입력되지 않았습니다. 종료합니다."
+        exit 1
+    fi
+    
+    # 현재 날짜/시간으로 디렉토리 이름 생성 (YYYYMMDDHHMMSS)
+    timestamp=$(date +%Y%m%d%H%M%S)
+    INCOMPLETE_BACKUP_DIR="$base_path/minikube-backup-$timestamp"
+    
+    echo "백업 디렉토리를 생성합니다: $INCOMPLETE_BACKUP_DIR"
+    mkdir -p "$INCOMPLETE_BACKUP_DIR"
+    
+    if [ ! -d "$INCOMPLETE_BACKUP_DIR" ]; then
+        echo "백업 디렉토리 생성에 실패했습니다: $INCOMPLETE_BACKUP_DIR"
+        exit 1
+    fi
 fi
 
 if [ ! -d "$INCOMPLETE_BACKUP_DIR" ]; then
@@ -17,7 +32,7 @@ if [ ! -d "$INCOMPLETE_BACKUP_DIR" ]; then
     exit 1
 fi
 
-echo "=== 백업 복구 시작 ==="
+echo "=== 백업 시작 ==="
 echo "디렉토리: $INCOMPLETE_BACKUP_DIR"
 echo "프로필: $PROFILE_NAME"
 echo ""
@@ -128,14 +143,14 @@ fi
 echo ""
 echo "=== 백업 메타데이터 업데이트 ==="
 cat > backup-metadata.txt << EOF
-=== Minikube 클러스터 백업 정보 (복구됨) ===
+=== Minikube 클러스터 백업 정보 ===
 백업 시간: $(date)
-원본 백업: $(basename $(pwd))
+백업 디렉토리: $(basename $(pwd))
 프로필 이름: $PROFILE_NAME
 Kubernetes 버전: $(kubectl version --short 2>/dev/null | grep Server || echo "Unknown")
 minikube 버전: $(minikube version 2>/dev/null || echo "Unknown")
 백업 위치: $(pwd)
-복구 완료: $(date)
+백업 완료: $(date)
 
 === 포함된 백업 항목 ===
 - Kubernetes 리소스: $(find k8s-resources -name "*.yaml" 2>/dev/null | wc -l) 파일
@@ -146,16 +161,16 @@ minikube 버전: $(minikube version 2>/dev/null || echo "Unknown")
 - minikube 프로필: 설정 및 인증서
 - 시스템 정보: 클러스터 상태
 
-=== 복구 과정에서 해결된 문제 ===
-- Secret 디코딩 오류 수정
-- 누락된 구성 요소 백업 완성
-- 메타데이터 업데이트
+=== 백업 과정에서 수행된 작업 ===
+- Secret 디코딩 및 저장
+- 전체 구성 요소 백업
+- 메타데이터 생성
 
 EOF
 
 echo ""
-echo "=== 백업 복구 완료 ==="
-echo "복구된 백업 디렉토리: $(pwd)"
+echo "=== 백업 완료 ==="
+echo "백업 디렉토리: $(pwd)"
 echo ""
 echo "백업 내용 요약:"
 echo "- Kubernetes 리소스: $(find k8s-resources -name "*.yaml" 2>/dev/null | wc -l) 파일"
@@ -176,4 +191,4 @@ if [[ $compress_confirm == [yY] ]]; then
 fi
 
 echo ""
-echo "백업 복구가 완료되었습니다!"
+echo "백업이 완료되었습니다!"
